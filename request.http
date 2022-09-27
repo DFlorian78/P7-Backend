@@ -1,0 +1,24 @@
+POST http://localhost:3000/posts HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IkFkbWluaXN0cmF0ZXVyQGdyb3Vwb21hbmlhLmZyIiwiaWF0IjoxNjYzNzc3NzE0LCJleHAiOjE2NjM4NjQxMTR9.cB8FkaAxWvf-Qf1TlJ7jX4hkm989sViE80P2HgJ06Pw
+
+{"content": "hello world"}
+
+###
+GET http://localhost:3000/posts HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGVzdC5mciIsImlhdCI6MTY2MjU2NTU4MCwiZXhwIjoxNjYyNjUxOTgwfQ.pwBZffYLyFVTOm8mzVZizvEohn_riEtIs9jYfCBb9o8
+
+
+###
+POST http://localhost:3000/auth/login HTTP/1.1
+content-type: application/json
+
+{ "email": "test@test.com", "password": "123456" }
+
+###
+
+POST http://localhost:3000/auth/signup HTTP/1.1
+content-type: application/json
+
+{ "email": "Administrateur@groupomania.fr", "password": "Admin123456", "confirmPassword": "Admin123456" }

@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+datasource db {
+  provider = "mysql"
+  url = env("DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+model         User {
+  id          Int     @id @default(autoincrement())
+  email       String  @unique
+  password    String
+  is_admin    Boolean @default(false)
+  posts       Post[]
+  comments    Comment[]
+}
+
+model         Post{
+    id        Int @id @default(autoincrement())
+    content   String
+    imageUrl  String?
+    userId    Int 
+    user      User @relation(fields:[userId], references: [id])
+    comments  Comment[]
+    usersliked String
+    usersdisliked String
+    createdAt DateTime @default(now())
+}
+
+model         Comment {
+    id        Int @id @default(autoincrement())
+    content   String
+    postId    Int
+    post      Post @relation(fields:[postId], references: [id])
+    userId    Int
+    user      User @relation(fields:[userId], references: [id])
+
+}
