@@ -1,7 +1,6 @@
 const { prisma } = require("../db/db")
 
 async function getPosts(req, res) {
-    //res.send({ posts, email })
     const posts = await prisma.post.findMany({
         include: {
             comments: {
@@ -70,7 +69,7 @@ async function deletePost(req, res) {
             return res.status(404).send({ error: " Post was not found" })
         }
 
-        if (req.authId !== post.userId) {
+        if (req.authId !== post.userId || currentUser.is_admin==1) {
             return res.status(404).send({ error: "Vous n'êtes pas l'auteur de ce post" })
         }
         // Ici on supprime les commenaires liés au post
@@ -82,63 +81,30 @@ async function deletePost(req, res) {
     }
 }
 
-/*
- //// MODIFICATIONS DES PRODUITS ///
- function modifyPost(req, res) {
-    post.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
-/// On cherche notre id dans params, qui est dans la requête
-    const {
-    params: { id }
-    } = req
-
-
-//////// On crée cette constante pour modifier l'image
-    const hasNewImage = req.file != null
-    const modify = makeModifyImage(hasNewImage, req)
-    /// On cherche nos produits à modifier dans la base de données, avec une réponse ou alors une erreur
-    post.findByIdAndUpdate (id, modify)
-    const post = await prisma.post.findUnique({
-    where: {id: postId},
-    /// On récupère notre userId du post avec Prisma
-    include: {
-        user: {
-            select: {
-                id: true
-            }
+ //// MODIFICATIONS DES POSTS ///
+ async function updatePost(req, res) {
+    let post = await prisma.post.findUnique({
+        where: {
+            id: parseInt(req.params.id)
         }
-        .then((res) => console.log("Image supprimé", res))
-        .catch(err => console.error("Problème lors de la modification", err))
-}
-////// SUPRESSION DES ANCIENNES PHOTOS LORS DE LA MODIFICATION
-function deleteOldImage(post) {
-    if (post == null) return
-    console.log("Delete image", post)
-    ///// Ici on utilise split et -1 pour supprimer la dernière branche de l'adresse donc le fichier image
-    const imageToDelete = post.imageUrl.split("/").at(-1)
-    return unlink("images/" + imageToDelete)
+    });
+    
+    addImagePost(req, post)
 
-}
-///// Fonction pour modifier notre image avec Multer
-function makeModifyImage(hasNewImage, req) {
-    console.log("hasNewImage:", hasNewImage)
-    if (!hasNewImage) return req.body
-////// On utilise JSON pour transformer en objet
-    const modify = JSON.parse(req.body.post)
-    modify.imageUrl = urlImage(req, req.file.fileName)
-    console.log("Nouvelle image ajouter")
-    console.log("Voici la modification :", modify)
-    return modify
-}
-//// Fonction pour valider ou non nos mises à jour produits 
-function clientResponse(post, res) {
-    if (post == null) {
-        console.log("Rien à mettre à jour")
-        return res.status(404).send({ message : "Le produit n'es pas dans la base de donnée"})
-    }
-        console.log("Le produit à été mis à jour", post)
-        return Promise.resolve(res.status(200).send(post)).then(()=> post)
-}
-*/
+    post = await prisma.post.update({
+        data: {
+            content:req.body.content,
+        },
+        where: {
+            id: post.id
+        }
+
+    })
+
+    return res.send({ post })
+
+   }
+
 
 ////// On met en place les likes
 async function likePost(req, res) {
@@ -242,30 +208,16 @@ async function createComment(req, res) {
     /// On force le req.params à nous rendre un nombre pour notre Id
     const postId = Number(req.params.id)
     const post = await prisma.post.findUnique({
-        where: { id: postId },
-        /// On récupère notre userId du post avec Prisma
-        include: {
-            user: {
-                select: {
-                    id: true
-                }
-            }
-        }
+        where: { id: postId }
     })
     if (post == null) {
         return res.status(404).send({ error: "Post was not found" })
     }
 
-    /// On récupère l'email de la personne qui commente le post
-    const userComment = await prisma.user.findUnique({
-        where: { email: req.email }
-    })
-    const userId = userComment.id
     /// On récupère nos données d'envoie
-    const commentToSend = { userId, postId, content: req.body.comment }
+    const commentToSend = { userId: Number(req.authId), postId, content: req.body.comment }
     const comment = await prisma.comment.create({ data: commentToSend })
-
     res.send({ comment })
 }
 
-module.exports = { getPosts, createPost, createComment, deletePost, likePost }
+module.exports = { getPosts, createPost, createComment, deletePost, likePost, updatePost }
