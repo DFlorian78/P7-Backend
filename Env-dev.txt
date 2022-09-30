@@ -1,0 +1,5 @@
+PORT=3000
+DB_USER=
+DB_PASSWORD=
+DB_JWT=
+DATABASE_URL='mysql://f6ewpohwieszr1odtwp5:pscale_pw_DUcsyMipMpwzFLZUqGrii0Udqzz8ioviGGPGA2jKRG4@eu-west.connect.psdb.cloud/groupomania?sslaccept=strict'
