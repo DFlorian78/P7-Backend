@@ -14,7 +14,7 @@ HOW TO USE
 
 1. git clone this repo
 2. npm install
-3. rename the '.env dev' file into '.env'
+3. rename the 'env-dev' file into '.env' and modify informations.
 4. This repo was tedted with an online PlanetScale MySQL database
 
 HOW TO USE PRISMA 
