@@ -1,5 +1,5 @@
 const { prisma } = require("../db/db")
-
+/// On récupère nos Post grâce aux schémas de notre DB
 async function getPosts(req, res) {
     const posts = await prisma.post.findMany({
         include: {
@@ -24,27 +24,27 @@ async function getPosts(req, res) {
     })
     res.send({ posts })
 }
-
+/// On fait notre fonction pour créer un post
 async function createPost(req, res) {
     const content = req.body.content
-
     try {
+        // On compare si notre UserId et identique a notre authId
         const userId = req.authId
         const post = { content, userId, usersliked: '', usersdisliked: '' }
         addImagePost(req, post)
-
+        /// On créer notre post dans notre base de données
         const resolve = await prisma.post.create({ data: post })
-        console.log("resolve:", resolve)
         res.send({ post: resolve })
     } catch (err) {
         console.log(err);
         res.status(500).send({ error: "Une erreur est survenue" })
     }
 }
-
+//Fonction pour ajouter une image a notre post
 function addImagePost(req, post) {
     const hasImage = req.file != null
     if (!hasImage) return
+    // On renomme notre image
     let pathToImage = req.file.path.replace("\\", "/")
     /// Ici on génere l'adresse ou se charge la photo (ici localhost:3000)
     const protocol = req.protocol
@@ -59,6 +59,7 @@ function addImagePost(req, post) {
 /// Fonction pour supprimer nos posts
 async function deletePost(req, res) {
     const postId = Number(req.params.id)
+    /// On cherche l'Id unique de notre post
     try {
         const post = await prisma.post.findUnique({
             where: {
@@ -69,9 +70,13 @@ async function deletePost(req, res) {
             return res.status(404).send({ error: " Post was not found" })
         }
 
-        if (req.authId !== post.userId || currentUser.is_admin==1) {
+        /// On compare l'id de l'auteur du post à l'id de la personne connecté
+        const user = await prisma.user.findUnique({ where: { id: req.authId } })
+
+        if (req.authId !== post.userId && user.is_admin != 1) {
             return res.status(404).send({ error: "Vous n'êtes pas l'auteur de ce post" })
         }
+
         // Ici on supprime les commenaires liés au post
         await prisma.comment.deleteMany({ where: { postId } })
         await prisma.post.delete({ where: { id: postId } })
@@ -81,30 +86,35 @@ async function deletePost(req, res) {
     }
 }
 
- //// MODIFICATIONS DES POSTS ///
- async function updatePost(req, res) {
+//// MODIFICATIONS DES POSTS ///
+async function updatePost(req, res) {
+    /// On cherche l'id unique du post dans la base de données
     let post = await prisma.post.findUnique({
         where: {
             id: parseInt(req.params.id)
         }
     });
-    
-    addImagePost(req, post)
 
+
+    /// On compare l'id de l'auteur du post à l'id de la personne connecté
+    const user = await prisma.user.findUnique({ where: { id: req.authId } })
+
+    if (req.authId !== post.userId && user.is_admin != 1) {
+        return res.status(404).send({ error: "Vous n'êtes pas l'auteur de ce post" })
+    }
+
+    // On met à jour la base de données avec update
+    addImagePost(req, post)
     post = await prisma.post.update({
         data: {
-            content:req.body.content,
+            content: req.body.content,
         },
         where: {
             id: post.id
         }
-
     })
-
     return res.send({ post })
-
-   }
-
+}
 
 ////// On met en place les likes
 async function likePost(req, res) {
@@ -113,14 +123,12 @@ async function likePost(req, res) {
     /// On utilise includes pour le nombre de likes
     if (![1, -1, 0].includes(like))
         return res.status(403).send({ message: "mauvaise requête" })
-
+    /// On utilise Prisma et findUnique pour notre compteur
     let post = await prisma.post.findUnique({
         where: {
             id: parseInt(req.params.id)
         }
     });
-
-
     post = voteUpdate(post, like, userId.toString());
 
     post = await prisma.post.update({
@@ -131,13 +139,11 @@ async function likePost(req, res) {
         where: {
             id: post.id
         }
-
     })
-
     return res.send({ post })
 }
 
-/////// FONCTION POUR LIKES OU DISLIKES
+/////// FONCTION POUR UPDATE LIKES OU DISLIKES
 function voteUpdate(post, like, userId) {
     if (like === 1 || like === -1)
         return voteLike(post, userId, like)
@@ -156,10 +162,6 @@ function resetVote(post, userId) {
     //// On utilise Every pour vérifier les valeurs de l'userId dans notre array
     if ([usersliked, usersdisliked].every((arr) => arr.includes(userId)))
         return Promise.reject("L'utilisateur à déjà voter")
-    //// On utilise Some pour faire le contraire de Every
-    /*if (![usersliked, usersdisliked].some((arr) => arr.includes(userId)))
-        return Promise.reject("L'utilisateur n'a pas voter")*/
-
     ///// On utilise filter pour renvoyer une array des différents userId
     if (usersliked.includes(userId)) {
         const filteruserliked = usersliked.filter(id => id !== userId);
@@ -213,7 +215,6 @@ async function createComment(req, res) {
     if (post == null) {
         return res.status(404).send({ error: "Post was not found" })
     }
-
     /// On récupère nos données d'envoie
     const commentToSend = { userId: Number(req.authId), postId, content: req.body.comment }
     const comment = await prisma.comment.create({ data: commentToSend })
